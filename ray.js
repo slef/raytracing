@@ -96,7 +96,11 @@ function findEdge(s,t,poly,sign) {
     return -1;
 }
 
-function bounces(s,t,poly,d) { // d: refraction index
+function bounces(ray,poly,d) { // d: refraction index
+    if (!ray)
+	return 0;
+    var s = ray[0];
+    var t = ray[1];
     var i = findEdge(s,t,poly,1);
     if (i < 0)
 	return 0;
@@ -137,7 +141,7 @@ function bouncesPolar(l,poly,d) {
     var s = l.dual(2)[0].add(new Point(2,2)).times(canvasSize/4);
     var t = l.dual(2)[1].add(new Point(2,2)).times(canvasSize/4);
     try{
-	return bounces(s,t,poly,d);
+	return bounces([s,t],poly,d);
     }
     catch (error) {
 	//console.log(error);
@@ -208,7 +212,6 @@ let s = function (p) {
 	    rightp5.draw();
     }
 }
-
 
 let t = function (p) {
     p.setup = function () {
