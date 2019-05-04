@@ -197,7 +197,9 @@ let s = function (p) {
 	    console.log("nope");
 	}
 	if (points.length > 2)
-	    rightp5.draw();
+	    dualp5s.forEach(function(ap5) {
+		ap5.draw();
+	    });
     }
 }
 
@@ -208,6 +210,14 @@ function polarScreenToRay(p) {
     var s = l.dual(2)[0].add(new Point(2,2)).times(canvasSize/4);
     var t = l.dual(2)[1].add(new Point(2,2)).times(canvasSize/4);
     return [s,t];
+}
+
+function targetScreenToRay(p) {
+    var p1 = p.times(1/canvasSize);
+    var s0 = new Point(Math.cos(2*Math.PI*p1.x),Math.sin(2*Math.PI*p1.x));
+    var t = s0.perp().times(0.7*(2*p1.y-1));
+    var s = t.minus(s0);
+    return [s.add(new Point(1/2,1/2)).times(canvasSize),t.add(new Point(1/2,1/2)).times(canvasSize)];
 }
 
 function makeDualP5(point2Ray) { // point2Ray(point) returns the dual ray [p,q]
@@ -253,7 +263,8 @@ return function (p) {
 }
 
 var rightp5 = new p5(makeDualP5(polarScreenToRay), 'c2');
+var bottomp5 = new p5(makeDualP5(targetScreenToRay), 'c3');
 var leftp5 = new p5(s, 'c1');
-
+var dualp5s = [rightp5, bottomp5];
 
 
