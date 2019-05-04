@@ -46,7 +46,7 @@ class Point {
 
 var points = [];
 
-var line = new Point(0,0); //polar dual
+var currentRay = false;
 
 function sq(x) {
     return x*x;
@@ -105,6 +105,7 @@ function bounces(ray,poly,d) { // d: refraction index
     if (i < 0)
 	return 0;
     var count = 2;
+    try {
     var u = intersection(s,t,poly[i],poly[(i+1)%poly.length]);
     //p.line(s.x,s.y,u.x,u.y);
     //p.ellipse(u.x,u.y,4,4);
@@ -114,7 +115,6 @@ function bounces(ray,poly,d) { // d: refraction index
     var w = intersection(u,v,poly[j],poly[(j+1)%poly.length]);
     //p.line(u.x,u.y,w.x,w.y);
     //p.ellipse(w.x,w.y,4,4);
-    try{
     while (critical(u,w,poly[(j+1)%poly.length],poly[j],1/d)) {
 	v = reflection(w.add(w.minus(u)),poly[(j+1)%poly.length],poly[j]);
 	u = w;
@@ -135,20 +135,6 @@ function bounces(ray,poly,d) { // d: refraction index
     return count;
 }
 
-function bouncesPolar(l,poly,d) {
-    if (! l.dual(2)) // line too far
-	return 0;
-    var s = l.dual(2)[0].add(new Point(2,2)).times(canvasSize/4);
-    var t = l.dual(2)[1].add(new Point(2,2)).times(canvasSize/4);
-    try{
-	return bounces([s,t],poly,d);
-    }
-    catch (error) {
-	//console.log(error);
-	//console.log(s);
-	//console.log(t);
-    }
-}
 
 let canvasSize = 400;
 let refrIndex = 2.417
@@ -162,16 +148,18 @@ let s = function (p) {
 
     p.draw = function () {
 	p.background(200);
+	p.stroke('black');
 	for (i=0;i<points.length;i++) {
 	    p.ellipse(points[i].x,points[i].y,4,4);
 	    if (points.length > 1) {
 		p.line(points[i].x,points[i].y,points[(i+1)%points.length].x,points[(i+1)%points.length].y);
 	    }
 	}
-	if (! line.dual(2)) // line too far
+	if (! currentRay) 
 	    return;
-	var s = line.dual(2)[0].add(new Point(2,2)).times(canvasSize/4);
-	var t = line.dual(2)[1].add(new Point(2,2)).times(canvasSize/4);
+	p.stroke('red');
+	var s = currentRay[0];
+	var t = currentRay[1];
 	var i = findEdge(s,t,points,1);
 	if (i>-1) {
 	    var u = intersection(s,t,points[i],points[(i+1)%points.length]);
@@ -213,7 +201,17 @@ let s = function (p) {
     }
 }
 
-let t = function (p) {
+function polarScreenToRay(p) {
+    var l = p.times(4/canvasSize).minus(new Point(2,2));
+    if (! l.dual(2)) // line too far
+	return false;
+    var s = l.dual(2)[0].add(new Point(2,2)).times(canvasSize/4);
+    var t = l.dual(2)[1].add(new Point(2,2)).times(canvasSize/4);
+    return [s,t];
+}
+
+function makeDualP5(point2Ray) { // point2Ray(point) returns the dual ray [p,q]
+return function (p) {
     p.setup = function () {
 	p.pixelDensity(1);
 	var cnv = p.createCanvas(canvasSize, canvasSize);
@@ -229,10 +227,11 @@ let t = function (p) {
 	p.loadPixels();
 	for (let y = 0; y < p.height; y++) {
 	    for (let x = 0; x < p.width; x++) {
-		var l = new Point(4*x/canvasSize - 2,
-				  4*y/canvasSize - 2);
+		//var l = new Point(4*x/canvasSize - 2,
+		//		  4*y/canvasSize - 2);
+		var ray = point2Ray(new Point(x,y));
 		var pix = (x+y*p.width)*4;
-		var bright = bouncesPolar(l,points,refrIndex);
+		var bright = bounces(ray,points,refrIndex);
 		if (bright > 10) {
 		    bright = 0;
 		}
@@ -247,17 +246,13 @@ let t = function (p) {
     }
     function setMouseLine () {
 	if (p.mouseIsPressed) {
-	    var a = 4*p.mouseX/canvasSize - 2; // in [-2, 2]
-	    var b = 4*p.mouseY/canvasSize - 2; // ax + by = 1 <=> y = 1/b - x * a/b
-	    //line.a = -a/b;
-	    //line.b = 1/b;
-	    line = new Point(a,b);
-	    console.log(line);
+	    currentRay = point2Ray(new Point(p.mouseX,p.mouseY));
 	}
     }
 }
+}
 
-var rightp5 = new p5(t, 'c2');
+var rightp5 = new p5(makeDualP5(polarScreenToRay), 'c2');
 var leftp5 = new p5(s, 'c1');
 
 
